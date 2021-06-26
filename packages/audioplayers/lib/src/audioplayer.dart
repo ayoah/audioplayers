@@ -497,6 +497,21 @@ class AudioPlayer {
     return result;
   }
 
+  Future<int> setEarpieceOrSpeakers(PlayingRoute routeState) async {
+    final result = await _invokeMethod(
+      'earpieceOrSpeakersToggle',
+      <String, dynamic>{
+        'playingRoute': routeState.name(),
+      },
+    );
+
+    if (result == 1) {
+      playingRouteState = routeState;
+    }
+
+    return result;
+  }
+
   bool isLocalUrl(String url) {
     return url.startsWith('/') ||
         url.startsWith('file://') ||
