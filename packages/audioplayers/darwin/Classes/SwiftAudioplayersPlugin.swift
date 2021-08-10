@@ -374,7 +374,11 @@ public class SwiftAudioplayersPlugin: NSObject, FlutterPlugin {
                 try session.setCategory(category, options: options)
             }
             if let active = active {
-                try session.setActive(active)
+                if active {
+                    try session.setActive(active)
+                } else {
+                    try session.setActive(active, options: AVAudioSession.SetActiveOptions.notifyOthersOnDeactivation)
+                }
             }
         } catch {
             Logger.log("Error configuring audio session: %@", error)

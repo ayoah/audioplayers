@@ -178,31 +178,32 @@ class WrappedMediaPlayer internal constructor(
      * Playback handling methods
      */
     override fun play() {
-        if (duckAudio) {
-            val audioManager = audioManager
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
-                        .setAudioAttributes(
-                                AudioAttributes.Builder()
-                                        .setUsage(if (respectSilence) AudioAttributes.USAGE_NOTIFICATION_RINGTONE else AudioAttributes.USAGE_MEDIA)
-                                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                                        .build()
-                        )
-                        .setOnAudioFocusChangeListener { actuallyPlay() }.build()
-                this.audioFocusRequest = audioFocusRequest
-                audioManager.requestAudioFocus(audioFocusRequest)
-            } else {
-                // Request audio focus for playback
-                @Suppress("DEPRECATION")
-                val result = audioManager.requestAudioFocus(audioFocusChangeListener,  // Use the music stream.
-                        AudioManager.STREAM_MUSIC,  // Request permanent focus.
-                        AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
-                if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-                    actuallyPlay()
-                }
+        val audioManager = audioManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val audioFocusRequest = AudioFocusRequest.Builder(if (duckAudio) AudioManager.AUDIOFOCUS_GAIN_TRANSIENT else AudioManager.AUDIOFOCUS_GAIN)
+                    .setAudioAttributes(
+                            AudioAttributes.Builder()
+                                    .setUsage(if (respectSilence) AudioAttributes.USAGE_NOTIFICATION else AudioAttributes.USAGE_MEDIA)
+                                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                                    .build()
+                    )
+                    .setOnAudioFocusChangeListener { actuallyPlay() }.build()
+            this.audioFocusRequest = audioFocusRequest
+            audioManager.requestAudioFocus(audioFocusRequest)
+            if (this.audioFocusRequest == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                actuallyPlay()
             }
         } else {
-            actuallyPlay()
+            // Request audio focus for playback
+            @Suppress("DEPRECATION")
+            val result = audioManager.requestAudioFocus(audioFocusChangeListener,  // Use the music stream.
+                    // Use the music stream.
+                    if (respectSilence) AudioManager.STREAM_NOTIFICATION else AudioManager.STREAM_MUSIC,
+                    if (duckAudio) AudioManager.AUDIOFOCUS_GAIN_TRANSIENT else AudioManager.AUDIOFOCUS_GAIN
+            )
+            if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                actuallyPlay()
+            }
         }
     }
 
@@ -228,14 +229,12 @@ class WrappedMediaPlayer internal constructor(
     }
 
     override fun stop() {
-        if (duckAudio) {
-            val audioManager = audioManager
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                audioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
-            } else {
-                @Suppress("DEPRECATION")
-                audioManager.abandonAudioFocus(audioFocusChangeListener)
-            }
+        val audioManager = audioManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            audioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+        } else {
+            @Suppress("DEPRECATION")
+            audioManager.abandonAudioFocus(audioFocusChangeListener)
         }
         if (released) {
             return
@@ -354,7 +353,7 @@ class WrappedMediaPlayer internal constructor(
             // Works with bluetooth headphones
             // automatically switch to earpiece when disconnect bluetooth headphones
             playingRoute != "speakers" -> AudioAttributes.USAGE_VOICE_COMMUNICATION
-            respectSilence -> AudioAttributes.USAGE_NOTIFICATION_RINGTONE
+            respectSilence -> AudioAttributes.USAGE_NOTIFICATION
             else -> AudioAttributes.USAGE_MEDIA
         }
         player.setAudioAttributes(
