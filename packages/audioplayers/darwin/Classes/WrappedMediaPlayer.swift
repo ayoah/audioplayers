@@ -89,6 +89,7 @@ class WrappedMediaPlayer {
     func pause() {
         isPlaying = false
         player?.pause()
+        reference.maybeDeactivateAudioSession()
     }
     
     func resume() {
@@ -161,6 +162,7 @@ class WrappedMediaPlayer {
         pause()
         isPlaying = false
         seek(time: toCMTime(millis: 0))
+        reference.maybeDeactivateAudioSession()
     }
     
     func release() {

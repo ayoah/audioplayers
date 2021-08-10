@@ -320,9 +320,9 @@ public class SwiftAudioplayersPlugin: NSObject, FlutterPlugin {
         // AVAudioSessionCategoryOptionMixWithOthers option. If so, it prevents infoCenter from working correctly.
         let category = (playingRoute == "earpiece" || recordingActive) ? AVAudioSession.Category.playAndRecord : AVAudioSession.Category.playback
         
-        let options = isNotification || duckAudio ? AVAudioSession.CategoryOptions.mixWithOthers : []
+        let options = isNotification ? AVAudioSession.CategoryOptions.mixWithOthers : []
         
-        configureAudioSession(category: category, options: [], active: true)
+        configureAudioSession(category: category, options: options, active: true)
         if isNotification {
             UIApplication.shared.beginReceivingRemoteControlEvents()
         }
