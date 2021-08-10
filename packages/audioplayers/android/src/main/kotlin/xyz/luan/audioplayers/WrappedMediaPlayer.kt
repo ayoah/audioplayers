@@ -4,6 +4,8 @@ import android.content.Context
 import android.media.*
 import android.os.Build
 import android.os.PowerManager
+import android.util.Log
+import xyz.luan.audioplayers.Player.Companion.objectEquals
 
 class WrappedMediaPlayer internal constructor(
         private val ref: AudioplayersPlugin,
@@ -18,6 +20,7 @@ class WrappedMediaPlayer internal constructor(
     private var volume = 1.0
     private var rate = 1.0f
     private var respectSilence = false
+    private var isNotification = false
     private var stayAwake = false
     private var duckAudio = false
     private var releaseMode: ReleaseMode = ReleaseMode.RELEASE
@@ -120,7 +123,7 @@ class WrappedMediaPlayer internal constructor(
         }
     }
 
-    override fun configAttributes(respectSilence: Boolean, stayAwake: Boolean, duckAudio: Boolean) {
+    override fun configAttributes(respectSilence: Boolean, stayAwake: Boolean, duckAudio: Boolean, isNotification: Boolean) {
         if (this.respectSilence != respectSilence) {
             this.respectSilence = respectSilence
             if (!released) {
@@ -179,8 +182,10 @@ class WrappedMediaPlayer internal constructor(
      */
     override fun play() {
         val audioManager = audioManager
+        Log.d("==WrappedMediaPlayer", duckAudio.toString())
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val audioFocusRequest = AudioFocusRequest.Builder(if (duckAudio) AudioManager.AUDIOFOCUS_GAIN_TRANSIENT else AudioManager.AUDIOFOCUS_GAIN)
+            val audioFocusRequest = AudioFocusRequest.Builder(if (isNotification) AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK else if (duckAudio) AudioManager.AUDIOFOCUS_GAIN_TRANSIENT else AudioManager.AUDIOFOCUS_GAIN)
                     .setAudioAttributes(
                             AudioAttributes.Builder()
                                     .setUsage(if (respectSilence) AudioAttributes.USAGE_NOTIFICATION else AudioAttributes.USAGE_MEDIA)
@@ -189,8 +194,8 @@ class WrappedMediaPlayer internal constructor(
                     )
                     .setOnAudioFocusChangeListener { actuallyPlay() }.build()
             this.audioFocusRequest = audioFocusRequest
-            audioManager.requestAudioFocus(audioFocusRequest)
-            if (this.audioFocusRequest == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            val result = audioManager.requestAudioFocus(audioFocusRequest)
+            if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                 actuallyPlay()
             }
         } else {
@@ -199,7 +204,7 @@ class WrappedMediaPlayer internal constructor(
             val result = audioManager.requestAudioFocus(audioFocusChangeListener,  // Use the music stream.
                     // Use the music stream.
                     if (respectSilence) AudioManager.STREAM_NOTIFICATION else AudioManager.STREAM_MUSIC,
-                    if (duckAudio) AudioManager.AUDIOFOCUS_GAIN_TRANSIENT else AudioManager.AUDIOFOCUS_GAIN
+                    if (isNotification) AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK else if (duckAudio) AudioManager.AUDIOFOCUS_GAIN_TRANSIENT else AudioManager.AUDIOFOCUS_GAIN
             )
             if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                 actuallyPlay()
@@ -356,12 +361,20 @@ class WrappedMediaPlayer internal constructor(
             respectSilence -> AudioAttributes.USAGE_NOTIFICATION
             else -> AudioAttributes.USAGE_MEDIA
         }
-        player.setAudioAttributes(
-                AudioAttributes.Builder()
-                        .setUsage(usage)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .build()
-        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            player.setAudioAttributes(
+                    AudioAttributes.Builder()
+                            .setUsage(usage)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build()
+            )
+        } else {
+            if (playingRoute == "speakers") {
+                player.setAudioStreamType(if (respectSilence) AudioManager.STREAM_NOTIFICATION else AudioManager.STREAM_MUSIC)
+            } else {
+                player.setAudioStreamType(AudioManager.STREAM_VOICE_CALL)
+            }
+        }
 
         if (usage == AudioAttributes.USAGE_VOICE_COMMUNICATION) {
             audioManager.isSpeakerphoneOn = false

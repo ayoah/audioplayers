@@ -14,7 +14,7 @@ abstract class Player {
     abstract fun release()
     abstract fun pause()
 
-    abstract fun configAttributes(respectSilence: Boolean, stayAwake: Boolean, duckAudio: Boolean)
+    abstract fun configAttributes(respectSilence: Boolean, stayAwake: Boolean, duckAudio: Boolean, isNotification: Boolean)
     abstract fun setUrl(url: String, isLocal: Boolean)
     abstract fun setDataSource(mediaDataSource: MediaDataSource?)
     abstract fun setVolume(volume: Double)

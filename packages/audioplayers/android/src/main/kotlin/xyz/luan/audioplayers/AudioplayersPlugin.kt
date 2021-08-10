@@ -46,6 +46,7 @@ class AudioplayersPlugin : MethodCallHandler, FlutterPlugin {
             "play" -> {
                 val url = call.argument<String>("url") !!
                 val isLocal = call.argument<Boolean>("isLocal") ?: false
+                val isNotification = call.argument<Boolean>("isNotification") ?: false
 
                 val volume = call.argument<Double>("volume") ?: 1.0
                 val position = call.argument<Int>("position")
@@ -54,7 +55,7 @@ class AudioplayersPlugin : MethodCallHandler, FlutterPlugin {
                 val stayAwake = call.argument<Boolean>("stayAwake") ?: false
                 val duckAudio = call.argument<Boolean>("duckAudio") ?: false
 
-                player.configAttributes(respectSilence, stayAwake, duckAudio)
+                player.configAttributes(respectSilence, stayAwake, duckAudio, isNotification)
                 player.setVolume(volume)
                 player.setUrl(url, isLocal)
                 if (position != null && mode != "PlayerMode.LOW_LATENCY") {
@@ -66,10 +67,11 @@ class AudioplayersPlugin : MethodCallHandler, FlutterPlugin {
                 val bytes = call.argument<ByteArray>("bytes") ?: throw error("bytes are required")
                 val volume = call.argument<Double>("volume") ?: 1.0
                 val position = call.argument<Int>("position")
+                val isNotification = call.argument<Boolean>("isNotification") ?: false
                 val respectSilence = call.argument<Boolean>("respectSilence") ?: false
                 val stayAwake = call.argument<Boolean>("stayAwake") ?: false
                 val duckAudio = call.argument<Boolean>("duckAudio") ?: false
-                player.configAttributes(respectSilence, stayAwake, duckAudio)
+                player.configAttributes(respectSilence, stayAwake, duckAudio, isNotification)
                 player.setVolume(volume)
                 player.setDataSource(ByteDataSource(bytes))
                 if (position != null && mode != "PlayerMode.LOW_LATENCY") {
