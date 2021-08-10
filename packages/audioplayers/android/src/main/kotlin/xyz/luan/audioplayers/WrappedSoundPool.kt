@@ -167,7 +167,8 @@ class WrappedSoundPool internal constructor(override val playerId: String) : Pla
     override fun configAttributes(
             respectSilence: Boolean,
             stayAwake: Boolean,
-            duckAudio: Boolean
+            duckAudio: Boolean,
+            isNotification: Boolean,
     ) = Unit
 
     override fun setReleaseMode(releaseMode: ReleaseMode) {
