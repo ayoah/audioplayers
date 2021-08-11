@@ -130,6 +130,9 @@ class WrappedMediaPlayer internal constructor(
                 player?.let { setAttributes(it) }
             }
         }
+        if (this.isNotification != isNotification) {
+            this.isNotification = isNotification
+        }
         if (this.duckAudio != duckAudio) {
             this.duckAudio = duckAudio
             if (!released) {
